@@ -1,1 +1,1 @@
-# naiveproxy-hysteriaXray-install
+# naiveproxy-hysteria-Xray-install
