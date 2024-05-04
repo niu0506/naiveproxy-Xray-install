@@ -7,7 +7,7 @@
 运行以下命令来安装 NaiveProxy、Hysteria 和 Xray：
 
 ```
-bash -c "$(curl -L https://github.com/niu0506/naiveproxy-hysteria-Xray-install/blob/main/install.sh)"
+curl -fsSL https://raw.githubusercontent.com/niu0506/naiveproxy-hysteria-Xray-install/main/install.sh | bash
 ```
 
 ## 配置文件
