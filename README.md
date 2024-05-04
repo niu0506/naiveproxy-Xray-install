@@ -7,7 +7,8 @@
 运行以下命令来安装 NaiveProxy、Hysteria 和 Xray：
 
 ```
-curl -fsSL https://raw.githubusercontent.com/niu0506/naiveproxy-hysteria-Xray-install/main/install.sh | bash
+wget -P /root -N --no-check-certificate "https://raw.githubusercontent.com/niu0506/naiveproxy-hysteria-Xray-install/main/install.sh" && chmod 700 /root/install.sh && /root/install.sh
+
 ```
 
 ## 配置文件
