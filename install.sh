@@ -51,7 +51,7 @@ fi
 
 # 更新软件包列表并升级系统软件
 apt update
-apt install -y curl wget git debian-keyring debian-archive-keyring apt-transport-https crontabs
+apt install -y curl wget git debian-keyring debian-archive-keyring apt-transport-https crontabs nftables
 apt upgrade -y 
 
 # 运行apt自动清理
@@ -147,6 +147,26 @@ systemctl restart caddy.service
 # 安装Hysteria
 bash <(curl -fsSL https://get.hy2.sh/) 
 
+# 配置 nftables
+cat <<EOF > /etc/nftables.conf
+#!/usr/sbin/nft -f
+
+define INGRESS_INTERFACE = "eth0"
+define PORT_RANGE = 20000-21000
+define HYSTERIA_SERVER_PORT = 8443
+
+table inet hysteria_porthopping {
+  chain prerouting {
+    type nat hook prerouting priority dstnat; policy accept;
+    iifname $INGRESS_INTERFACE udp dport $PORT_RANGE counter redirect to :$HYSTERIA_SERVER_PORT
+  }
+}
+EOF
+
+# 启用 nftables 并重启服务
+systemctl enable nftables
+systemctl restart nftables
+
 # 修改Hysteria配置文件
 
 cat <<EOF > /etc/hysteria/config.yaml
@@ -180,6 +200,7 @@ masquerade:
   proxy:
     url: https://$DOMAIN/
     rewriteHost: true
+  forceHTTPS: true
 EOF
 
 # 检查证书目录是否存在
@@ -190,8 +211,8 @@ done
 # 复制证书文件到/etc/hysteria
 cp -f "$CERT_DIR/$DOMAIN.crt" /etc/hysteria/
 cp -f "$CERT_DIR/$DOMAIN.key" /etc/hysteria/
-chmod 444 /etc/hysteria/*.crt
-chmod 444 /etc/hysteria/*.key
+chmod 644 /etc/hysteria/*.crt
+chmod 644 /etc/hysteria/*.key
 
 # 安装xay
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
