@@ -13,7 +13,6 @@ sysctl -w net.core.wmem_max=16777216
 
 # Configure TCP settings
 sysctl -w net.ipv4.tcp_fin_timeout=30
-# Use tcp_tw_reuse instead of tcp_tw_recycle
 sysctl -w net.ipv4.tcp_tw_reuse=1
 
 # Load BBR module
