@@ -7,7 +7,7 @@
 运行以下命令来优化Linux：
 
 ```
-wget -P /root -N --no-check-certificate "https://raw.githubusercontent.com/niu0506/naiveproxy-hysteria-Xray-install/main/bbr.sh" && chmod 700 /root/bbr.sh && /root/bbr.sh
+wget -P /root -N --no-check-certificate "https://raw.githubusercontent.com/niu0506/naiveproxy-hysteria-Xray-install/main/bbr.sh" && chmod 700 /root/bbr.sh && bash /root/bbr.sh
 
 ```
 
@@ -16,7 +16,7 @@ wget -P /root -N --no-check-certificate "https://raw.githubusercontent.com/niu05
 运行以下命令来安装 NaiveProxy、Hysteria 和 Xray：
 
 ```
-wget -P /root -N --no-check-certificate "https://raw.githubusercontent.com/niu0506/naiveproxy-hysteria-Xray-install/main/install.sh" && chmod 700 /root/install.sh && /root/install.sh
+wget -P /root -N --no-check-certificate "https://raw.githubusercontent.com/niu0506/naiveproxy-hysteria-Xray-install/main/install.sh" && chmod 700 /root/install.sh && bash /root/install.sh
 
 ```
 
