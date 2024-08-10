@@ -2,6 +2,15 @@
 
 这个项目提供了一个一键安装脚本，用于快速部署 NaiveProxy、Hysteria 和 Xray 的联合使用。通过这个脚本，你可以轻松地搭建一个高性能的代理服务。
 
+## 优化Linux
+
+运行以下命令来优化Linux：
+
+```
+wget -P /root -N --no-check-certificate "https://raw.githubusercontent.com/niu0506/naiveproxy-hysteria-Xray-install/main/bbr.sh" && chmod 700 /root/bbr.sh && /root/bbr.sh
+
+```
+
 ## 安装
 
 运行以下命令来安装 NaiveProxy、Hysteria 和 Xray：
