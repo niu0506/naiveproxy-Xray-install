@@ -1,6 +1,5 @@
 #!/bin/bash
-
-# 函数：检查命令是否存在
+b_ugscane_rb_ugscane_r# 函数：检查命令是否存在
 command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
