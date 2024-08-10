@@ -34,7 +34,7 @@ sysctl -w net.ipv4.tcp_wmem="4096 87380 6291456"
 
 # 检查并验证 TCP 接收缓冲区大小
 current_rmem=$(sysctl -n net.ipv4.tcp_rmem | tr -d ' ')
-expected_rmem="4096 87380 6291456"
+expected_rmem="4096	87380	6291456"
 
 if [ "$current_rmem" != "$expected_rmem" ]; then
     echo "错误：TCP 接收缓冲区大小设置不正确。当前值为：$current_rmem"
@@ -43,7 +43,7 @@ fi
 
 # 检查并验证 TCP 发送缓冲区大小
 current_wmem=$(sysctl -n net.ipv4.tcp_wmem | tr -d ' ')
-expected_wmem="4096 87380 6291456"
+expected_wmem="4096	87380	6291456"
 
 if [ "$current_wmem" != "$expected_wmem" ]; then
     echo "错误：TCP 发送缓冲区大小设置不正确。当前值为：$current_wmem"
