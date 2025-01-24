@@ -173,6 +173,7 @@ EOF
     readonly RANDOM_SHORTID=$(openssl rand -hex 4)
 
     # 生成Xray配置
+# 生成Xray配置（使用<<EOF顶格写法）
 cat > /usr/local/etc/xray/config.json <<EOF
 {
     "log": { "loglevel": "warning" },
@@ -211,10 +212,9 @@ cat > /usr/local/etc/xray/config.json <<EOF
     ]
 }
 EOF
-    chmod 600 /root/naive.json
 
-    # 输出配置信息
-    cat <<-EOF
+# 输出配置信息（使用<<-EOF + tab缩进）
+cat <<-EOF
 
     ${CGRN}=== 安装完成 ===${CRST}
     ${CYEL}服务器IP: ${CGRN}${SERVER_IP}
@@ -228,7 +228,6 @@ EOF
     vless://${RANDOM_UUID}@${SERVER_IP}:${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=${DOMAIN}&fp=chrome&pbk=${PUBLIC_KEY}&sid=${RANDOM_SHORTID}&type=tcp#xray-reality
 
     ${CGRN}NaiveProxy 配置已保存到: ${CYEL}/root/naive.json${CRST}
-    EOF
-}
+EOF
 
 main "$@"
