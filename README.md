@@ -10,7 +10,7 @@
 ```
 curl -fsSL https://raw.githubusercontent.com/niu0506/naiveproxy-Xray-install/refs/heads/main/bbr.sh -o tune_bbr.sh
 chmod +x tune_bbr.sh
-sudo ./tune_bbr.sh
+bash tune_bbr.sh
 ```
 2.日志记录（推荐）
 ```
