@@ -229,5 +229,6 @@ cat <<-EOF
 
     ${CGRN}NaiveProxy 配置已保存到: ${CYEL}/root/naive.json${CRST}
 EOF
+}
 
 main "$@"
