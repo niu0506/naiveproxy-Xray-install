@@ -7,7 +7,7 @@
 运行以下命令来优化Linux：
 
 ```
-bash <(curl -fsSL "https://raw.githubusercontent.com/niu0506/naiveproxy-hysteria-Xray-install/main/bbr.sh" | tr -d '\r')
+bash <(curl -fsSL "https://raw.githubusercontent.com/niu0506/naiveproxy-hysteria-Xray-install/main/bbr.sh" | dos2unix)
 
 ```
 
