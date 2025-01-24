@@ -1,6 +1,6 @@
-# 一键安装 NaiveProxy + Hysteria + Xray
+# 一键安装 NaiveProxy + Xray
 
-这个项目提供了一个一键安装脚本，用于快速部署 NaiveProxy、Hysteria 和 Xray 的联合使用。通过这个脚本，你可以轻松地搭建一个高性能的代理服务。
+这个项目提供了一个一键安装脚本，用于快速部署 NaiveProxy 和 Xray 的联合使用。通过这个脚本，你可以轻松地搭建一个高性能的代理服务。
 
 ## 优化Linux
 
@@ -24,7 +24,7 @@ sudo sysctl --system
 
 ## 安装
 
-运行以下命令来安装 NaiveProxy、Hysteria 和 Xray：
+运行以下命令来安装 NaiveProxy 和 Xray：
 
 ```
 wget -P /root -N --no-check-certificate "https://raw.githubusercontent.com/niu0506/naiveproxy-hysteria-Xray-install/main/install.sh" && chmod 700 /root/install.sh && bash install.sh
@@ -41,7 +41,6 @@ wget -P /root -N --no-check-certificate "https://raw.githubusercontent.com/niu05
 
 - [Xray Install](https://github.com/xtls/Xray-core)
 - [NaiveProxy](https://github.com/klzgrad/naiveproxy)
-- [Hysteria](https://github.com/HyNetwork/hysteria)
 
 
 
