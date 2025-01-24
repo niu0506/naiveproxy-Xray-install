@@ -135,26 +135,26 @@ main() {
 
     # 配置Caddyfile
     echo -e "${CYEL}[5/7] 生成Caddy配置...${CRST}"
-    cat > /etc/caddy/Caddyfile <<-EOF
-    :80 {
-        redir https://{host}{uri} permanent
-    }
+cat > /etc/caddy/Caddyfile <<-EOF
+:80 {
+    redir https://{host}{uri} permanent
+}
 
-    ${DOMAIN}:443 {
-        tls ${EMAIL}
-        route {
-            forward_proxy {
-                basic_auth ${AUTH_USER} ${AUTH_PASS}
-                hide_ip
-                hide_via
-                probe_resistance
-            }
-            reverse_proxy https://www.coze.com {
-                header_up Host {upstream_hostport}
-                header_up X-Forwarded-Host {host}
-            }
+${DOMAIN}:443 {
+    tls ${EMAIL}
+    route {
+        forward_proxy {
+            basic_auth ${AUTH_USER} ${AUTH_PASS}
+            hide_ip
+            hide_via
+            probe_resistance
+        }
+        reverse_proxy https://www.coze.com {
+            header_up Host {upstream_hostport}
+            header_up X-Forwarded-Host {host}
         }
     }
+}
 EOF
 
     systemctl restart caddy.service
@@ -173,7 +173,7 @@ EOF
     readonly RANDOM_SHORTID=$(openssl rand -hex 4)
 
     # 生成Xray配置
-    cat > /usr/local/etc/xray/config.json <<EOF
+cat > /usr/local/etc/xray/config.json <<EOF
 {
     "log": { "loglevel": "warning" },
     "routing": {
@@ -209,17 +209,6 @@ EOF
         { "tag": "direct", "protocol": "freedom" },
         { "tag": "block", "protocol": "blackhole" }
     ]
-}
-EOF
-
-    systemctl restart xray.service
-    check_service xray
-
-    # 保存Naive配置
-    cat > /root/naive.json <<EOF
-{
-    "listen": "socks://127.0.0.1:1080",
-    "proxy": "https://${AUTH_USER}:${AUTH_PASS}@${DOMAIN}"
 }
 EOF
     chmod 600 /root/naive.json
