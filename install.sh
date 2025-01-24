@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euo pipefail  # 启用严格模式
+set -euo pipefail
 
 # 定义颜色代码和重置符号
 readonly CRED='\033[0;31m'
@@ -20,9 +20,16 @@ generate_random() {
     tr -dc "$charset" < /dev/urandom | head -c "$length"
 }
 
+# 检查服务状态
+check_service() {
+    if ! systemctl is-active --quiet "$1"; then
+        die "服务 $1 启动失败，请检查日志：journalctl -u $1"
+    fi
+}
+
 # 检查依赖命令
 check_deps() {
-    local deps=("curl" "wget" "git" "openssl" "shuf")
+    local deps=("curl" "wget" "git" "openssl" "shuf" "gpg" "xray")
     for cmd in "${deps[@]}"; do
         if ! command -v "$cmd" &> /dev/null; then
             die "依赖命令 $cmd 未安装"
@@ -35,6 +42,23 @@ get_server_ip() {
     hostname -I | awk '{print $1}' | grep -Eo '^([0-9]{1,3}\.){3}[0-9]{1,3}$' || die "无法获取有效IP"
 }
 
+# 配置防火墙
+configure_firewall() {
+    if command -v ufw &> /dev/null; then
+        ufw allow 80/tcp
+        ufw allow 443/tcp
+        ufw allow "$1"/tcp
+        ufw reload
+    elif command -v firewall-cmd &> /dev/null; then
+        firewall-cmd --permanent --add-port=80/tcpl
+        firewall-cmd --permanent --add-port=443/tcp
+        firewall-cmd --permanent --add-port="$1"/tcp
+        firewall-cmd --reload
+    else
+        echo -e "${CYEL}警告: 未找到UFW或firewalld，请手动开放端口$1,80,443${CRST}"
+    fi
+}
+
 # 主函数
 main() {
     check_deps
@@ -44,11 +68,15 @@ main() {
     read -p "请输入域名（如 example.com）: " DOMAIN
     readonly DOMAIN=${DOMAIN:-"example.com"}
 
+    # 验证域名解析
+    if ! dig +short "$DOMAIN" | grep -q "$SERVER_IP"; then
+        echo -e "${CRED}警告: 域名 $DOMAIN 未解析到本机IP $SERVER_IP，证书申请可能失败！${CRST}"
+        read -p "是否继续？(y/N) " -n 1 -r
+        [[ $REPLY =~ ^[Yy]$ ]] || die "用户取消"
+    fi
+
     # 获取Go最新版本
     readonly GOLANG_VERSION=$(curl -fsSL "https://golang.org/VERSION?m=text" | head -n1)
-
-    # 证书路径
-    readonly CERT_DIR="/var/lib/caddy/.local/share/caddy/certificates/acme-v02.api.letsencrypt.org-directory/$DOMAIN"
 
     # 用户输入处理
     read -p "请输入邮箱（默认随机）: " EMAIL
@@ -60,30 +88,38 @@ main() {
     readonly AUTH_USER=${AUTH_USER:-$(generate_random 12)}
 
     read -s -p "请输入naiveproxy密码（默认随机）: " AUTH_PASS
-    echo  # 处理换行
+    echo
     readonly AUTH_PASS=${AUTH_PASS:-$(openssl rand -hex 12)}
 
     read -p "请输入xray端口（默认10000-20000随机）: " PORT
     readonly PORT=${PORT:-$(shuf -i 10000-20000 -n 1)}
 
     # 系统更新
-    echo -e "${CYEL}[1/6] 更新系统组件...${CRST}"
+    echo -e "${CYEL}[1/7] 更新系统组件...${CRST}"
     export DEBIAN_FRONTEND=noninteractive
     apt-get -qq update && apt-get -qq upgrade -y
-    apt-get -qq install -y curl wget git crontabs debian-archive-keyring
+    apt-get -qq install -y curl wget git crontabs debian-archive-keyring ufw
     apt-get -qq autoremove -y
 
-    # 安装Golang
-    echo -e "${CYEL}[2/6] 安装Golang ${GOLANG_VERSION}...${CRST}"
-    readonly GO_TAR="go${GOLANG_VERSION}.linux-amd64.tar.gz"
-    wget -q --show-progress "https://dl.google.com/go/${GO_TAR}"
-    tar -C /usr/local -xzf "$GO_TAR"
-    rm -f "$GO_TAR"
-    echo "export PATH=\$PATH:/usr/local/go/bin" >> /etc/profile.d/go.sh
-    source /etc/profile.d/go.sh
+    # 配置防火墙
+    echo -e "${CYEL}[2/7] 配置防火墙...${CRST}"
+    configure_firewall "$PORT"
 
-    # 安装Caddy
-    echo -e "${CYEL}[3/6] 配置Caddy服务...${CRST}"
+    # 安装Golang（如果尚未安装）
+    if [[ ! -d /usr/local/go ]]; then
+        echo -e "${CYEL}[3/7] 安装Golang ${GOLANG_VERSION}...${CRST}"
+        readonly GO_TAR="go${GOLANG_VERSION}.linux-amd64.tar.gz"
+        wget -q --show-progress "https://dl.google.com/go/${GO_TAR}"
+        tar -C /usr/local -xzf "$GO_TAR"
+        rm -f "$GO_TAR"
+        echo "export PATH=\$PATH:/usr/local/go/bin" >> /etc/profile.d/go.sh
+        source /etc/profile.d/go.sh
+    else
+        echo -e "${CYEL}[3/7] 跳过Golang安装，已存在...${CRST}"
+    fi
+
+    # 安装Caddy（使用自定义编译版本）
+    echo -e "${CYEL}[4/7] 配置Caddy服务...${CRST}"
     if ! [[ -f /usr/bin/caddy ]]; then
         curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
         curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' > /etc/apt/sources.list.d/caddy-stable.list
@@ -92,12 +128,13 @@ main() {
 
         # 编译自定义Caddy
         go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
-        xcaddy build --with github.com/caddyserver/forwardproxy=github.com/klzgrad/forwardproxy@naive
+        ~/go/bin/xcaddy build --with github.com/caddyserver/forwardproxy=github.com/klzgrad/forwardproxy@naive
+        systemctl stop caddy
         mv caddy /usr/bin/
     fi
 
     # 配置Caddyfile
-    echo -e "${CYEL}[4/6] 生成Caddy配置...${CRST}"
+    echo -e "${CYEL}[5/7] 生成Caddy配置...${CRST}"
     cat > /etc/caddy/Caddyfile <<-EOF
     :80 {
         redir https://{host}{uri} permanent
@@ -121,13 +158,14 @@ main() {
 EOF
 
     systemctl restart caddy.service
+    check_service caddy
 
     # 安装Xray
-    echo -e "${CYEL}[5/6] 安装Xray服务...${CRST}"
+    echo -e "${CYEL}[6/7] 安装Xray服务...${CRST}"
     bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
 
     # 生成密钥材料
-    echo -e "${CYEL}[6/6] 生成安全凭证...${CRST}"
+    echo -e "${CYEL}[7/7] 生成安全凭证...${CRST}"
     readonly X25519_KEY=$(xray x25519)
     readonly PRIVATE_KEY=$(awk '/Private key:/{print $3}' <<< "$X25519_KEY")
     readonly PUBLIC_KEY=$(awk '/Public key:/{print $3}' <<< "$X25519_KEY")
@@ -175,6 +213,16 @@ EOF
 EOF
 
     systemctl restart xray.service
+    check_service xray
+
+    # 保存Naive配置
+    cat > /root/naive.json <<EOF
+{
+    "listen": "socks://127.0.0.1:1080",
+    "proxy": "https://${AUTH_USER}:${AUTH_PASS}@${DOMAIN}"
+}
+EOF
+    chmod 600 /root/naive.json
 
     # 输出配置信息
     cat <<-EOF
