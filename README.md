@@ -8,7 +8,7 @@
 1.保存为文件并授权
 
 ```
-curl -fsSL https://raw.githubusercontent.com/niu0506/naiveproxy-Xray-install/refs/heads/main/bbr.sh -o tune_bbr.sh
+curl -fsSL https://raw.githubusercontent.com/niu0506/naiveproxy-Xray-install/refs/heads/main/bbr.sh | sed 's/\r$//' > tune_bbr.sh
 chmod +x tune_bbr.sh
 bash tune_bbr.sh
 ```
