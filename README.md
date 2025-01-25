@@ -5,20 +5,10 @@
 ## 优化Linux
 
 运行以下命令来优化Linux：
-1.保存为文件并授权
 
 ```
 curl -fsSL https://raw.githubusercontent.com/niu0506/naiveproxy-Xray-install/refs/heads/main/bbr.sh -o tune_bbr.sh
 bash tune_bbr.sh
-```
-2.日志记录（推荐）
-```
-sudo ./tune_bbr.sh 2>&1 | tee /var/log/bbr_tuning.log
-```
-3.卸载还原
-```
-sudo rm -f /etc/sysctl.d/99-bbr.conf
-sudo sysctl --system
 ```
 
 ## 安装
