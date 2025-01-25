@@ -7,8 +7,7 @@
 运行以下命令来优化Linux：
 
 ```
-curl -fsSL https://raw.githubusercontent.com/niu0506/naiveproxy-Xray-install/refs/heads/main/bbr.sh -o tune_bbr.sh
-bash tune_bbr.sh
+bash <(curl -fsSL "https://raw.githubusercontent.com/niu0506/naiveproxy-hysteria-Xray-install/main/bbr.sh")
 ```
 
 ## 安装
