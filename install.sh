@@ -114,9 +114,6 @@ tar -xvf caddy-forwardproxy-naive.tar.xz
 sudo cp /root/caddy-forwardproxy-naive/caddy /usr/bin
 # 为 /usr/bin 目录下的 caddy 文件添加执行权限
 sudo chmod +x /usr/bin/caddy
-# 删除下载的文件和解压后的目录
-rm -rf /root/caddy-forwardproxy-naive
-rm -f /root/caddy-forwardproxy-naive.tar.xz
 
 # 生成Caddy配置
 echo -e "\n${GREEN}生成Caddy配置文件...${NC}"
@@ -199,6 +196,10 @@ EOF
 
 # 重启Xray服务
 sudo systemctl restart xray.service || die "Xray服务启动失败"
+
+# 删除下载的文件和解压后的目录
+rm -rf /root/caddy-forwardproxy-naive
+rm -f /root/caddy-forwardproxy-naive.tar.xz
 
 # 输出配置信息
 echo -e "\n${GREEN}======== 安装完成 ========${NC}"
