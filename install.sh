@@ -40,38 +40,23 @@ if [ -z "$PORT" ]; then
     PORT=$(shuf -i 10000-20000 -n 1)
 fi
 
-# 更新软件包列表并升级系统软件
-sudo apt update
-sudo apt install -y curl wget git debian-keyring debian-archive-keyring apt-transport-https crontabs nftables
-sudo apt upgrade -y 
+# 更新并安装基础软件
+sudo apt update && sudo apt install -y curl wget git debian-keyring debian-archive-keyring apt-transport-https crontabs nftables
+sudo apt upgrade -y && sudo apt autoremove -y
 
-# 运行apt自动清理
-sudo apt autoremove -y
-
-# 检查是否需要添加 Caddy 存储库
+# 添加 Caddy 存储库并安装
 if [ ! -f "/usr/share/keyrings/caddy-stable-archive-keyring.gpg" ] || [ ! -f "/etc/apt/sources.list.d/caddy-stable.list" ]; then
-    echo "需要添加 Caddy 存储库"
-    
-    # 添加 Caddy 存储库的 GPG 密钥
+    echo "添加 Caddy 存储库"
     curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-    
-    # 添加 Caddy 存储库的信息
     curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
-    
-    # 更新 apt 软件包列表
-    sudo apt update
-
-    # 安装 Caddy 软件包
-    sudo apt install -y caddy
+    sudo apt update && sudo apt install -y caddy
 fi
 
-#替换xcaddy
+# 替换 Caddy 为 xcaddy
 sudo systemctl stop caddy.service
-echo "正在下载并替换xcaddy..."
+echo "正在下载并替换 xcaddy..."
 wget https://github.com/klzgrad/forwardproxy/releases/download/v2.7.6-naive2/caddy-forwardproxy-naive.tar.xz
-tar -xvf caddy-forwardproxy-naive.tar.xz
-sudo cp /root/caddy-forwardproxy-naive/caddy /usr/bin
-# 为 /usr/bin 目录下的 caddy 文件添加执行权限
+tar -xvf caddy-forwardproxy-naive.tar.xz && sudo cp /root/caddy-forwardproxy-naive/caddy /usr/bin
 sudo chmod +x /usr/bin/caddy
 
 # 修改Caddyfile
@@ -96,24 +81,19 @@ EOF
 # 重启Caddy服务
 sudo systemctl restart caddy.service
 
-# 删除下载的文件和解压后的目录
-rm -rf /root/caddy-forwardproxy-naive
-rm -f /root/caddy-forwardproxy-naive.tar.xz
+# 清理临时文件
+rm -rf /root/caddy-forwardproxy-naive /root/caddy-forwardproxy-naive.tar.xz
 
 # 安装xay
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
 
-# 生成 x25519 密钥对并提取私钥和公钥
+# 生成 X25519 密钥对并提取私钥和公钥
 X25519_KEY=$(xray x25519)
-
-# 提取私钥和公钥
 PRIVATE_KEY=$(echo "$X25519_KEY" | grep "Private key:" | awk '{print $3}')
 PUBLIC_KEY=$(echo "$X25519_KEY" | grep "Public key:" | awk '{print $3}')
 
-# 生成随机 UUID
+# 生成随机 UUID 和 shortId
 RANDOM_UUID=$(xray uuid)
-
-# 生成随机的 shortId
 RANDOM_SHORTID=$(openssl rand -hex 8)
 
 # 修改xray配置文件
