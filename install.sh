@@ -85,7 +85,7 @@ main() {
     read -p "请输入邮箱（默认随机）: " EMAIL
     if [[ -z "$EMAIL" ]]; then
         # 不使用 generate_random，直接生成随机邮箱
-        EMAIL=$(openssl rand -hex 4)@$(openssl rand -hex 3).com
+        EMAIL=$(openssl rand -hex 4)@gmail.com
     fi
 
     read -p "请输入naiveproxy用户名（默认随机）: " AUTH_USER
