@@ -85,9 +85,6 @@ EOF
 # 重启Caddy服务
 sudo systemctl restart caddy.service
 
-# 清理临时文件
-rm -rf /root/caddy-forwardproxy-naive /root/caddy-forwardproxy-naive.tar.xz
-
 # 安装xay
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
 
