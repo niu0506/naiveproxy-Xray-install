@@ -57,7 +57,7 @@ sudo apt update && sudo apt install -y caddy
 # 替换 Caddy 为 xcaddy
 sudo systemctl stop caddy.service
 echo "正在下载并替换 xcaddy..."
-wget https://github.com/klzgrad/forwardproxy/releases/download/v2.7.6-naive2/caddy-forwardproxy-naive.tar.xz
+wget https://github.com/klzgrad/forwardproxy/releases/download/v2.9.1-naive/caddy-forwardproxy-naive.tar.xz
 tar -xvf caddy-forwardproxy-naive.tar.xz && sudo cp /root/caddy-forwardproxy-naive/caddy /usr/bin
 sudo chmod +x /usr/bin/caddy
 
