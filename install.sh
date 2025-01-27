@@ -50,7 +50,7 @@ configure_firewall() {
         ufw allow "$1"/tcp
         ufw reload
     elif command -v firewall-cmd &> /dev/null; then
-        firewall-cmd --permanent --add-port=80/tcpl
+        firewall-cmd --permanent --add-port=80/tcp
         firewall-cmd --permanent --add-port=443/tcp
         firewall-cmd --permanent --add-port="$1"/tcp
         firewall-cmd --reload
