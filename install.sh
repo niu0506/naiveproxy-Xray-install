@@ -90,7 +90,6 @@ main() {
 
     read -p "请输入naiveproxy用户名（默认随机）: " AUTH_USER
     if [[ -z "$AUTH_USER" ]]; then
-        # 不使用 generate_random，直接生成随机用户名
         AUTH_USER=$(openssl rand -hex 6)
     fi
     readonly AUTH_USER
