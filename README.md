@@ -15,7 +15,7 @@ bash <(curl -fsSL "https://raw.githubusercontent.com/niu0506/naiveproxy-hysteria
 运行以下命令来安装 NaiveProxy 和 Xray：
 
 ```
-wget -P /root -N --no-check-certificate "https://raw.githubusercontent.com/niu0506/naiveproxy-hysteria-Xray-install/main/install.sh" && chmod 700 /root/install.sh && bash install.sh
+bash <(curl -fsSL "https://raw.githubusercontent.com/niu0506/naiveproxy-hysteria-Xray-install/main/bbr.sh")
 
 ```
 
