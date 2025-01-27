@@ -142,10 +142,6 @@ main() {
     # 配置Caddyfile
     echo -e "${CYEL}[5/7] 生成Caddy配置...${CRST}"
     cat > /etc/caddy/Caddyfile <<-EOF
-:80 {
-    redir https://{host}{uri} permanent
-}
-
 ${DOMAIN}:443 {
     tls ${EMAIL}
     route {
