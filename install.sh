@@ -1,113 +1,94 @@
 #!/bin/bash
-set -euo pipefail
-trap 'echo -e "\n\033[31mError at line $LINENO\033[0m" >&2' ERR
 
-# 颜色定义
-RED='\033[31m'
-GREEN='\033[32m'
-YELLOW='\033[33m'
-NC='\033[0m'
+# 错误处理：若命令执行失败则退出脚本
+set -e
 
-#######################################
-# 输出错误信息并退出
-# Arguments:
-#   $1: 错误信息
-#######################################
-die() {
-  echo -e "${RED}Error: $1${NC}" >&2
-  exit 1
+# 函数：获取服务器的 IP 地址
+get_server_ip() {
+    hostname -I | awk '{print $1}'
 }
 
-#######################################
-# 通用输入函数
-# Globals:
-#   None
-# Arguments:
-#   $1: 变量名
-#   $2: 提示信息
-#   $3: 默认生成命令（可选）
-#######################################
-prompt_input() {
-  local var_name="$1"
-  local prompt="$2"
-  local default_gen="${3:-}"
-
-  read -p "$prompt" "$var_name"
-  
-  if [[ -z "${!var_name}" && -n "$default_gen" ]]; then
-    eval "$var_name=\"\$($default_gen)\""
-    echo -e "${YELLOW}使用自动生成值: ${!var_name}${NC}"
-  fi
+# 函数：生成随机字符串
+generate_random_string() {
+    local length=$1
+    cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w "$length" | head -n 1
 }
 
-#######################################
-# 生成随机字符串
-# Arguments:
-#   $1: 长度 (默认8)
-#   $2: 字符集 (默认a-zA-Z0-9)
-#######################################
-gen_random_str() {
-  local len="${1:-8}"
-  local charset="${2:-'a-zA-Z0-9'}"
-  LC_ALL=C tr -dc "$charset" </dev/urandom | head -c"$len"
+# 函数：生成随机端口
+generate_random_port() {
+    shuf -i 10000-20000 -n 1
 }
 
-#######################################
-# 安装系统依赖
-#######################################
-install_dependencies() {
-  echo -e "\n${GREEN}正在更新系统并安装依赖...${NC}"
-  
-  sudo apt update && sudo apt upgrade -y || die "系统更新失败"
-  sudo apt install -y \
-    curl \
-    wget \
-    git \
-    debian-keyring \
-    debian-archive-keyring \
-    apt-transport-https || die "依赖安装失败"
+# 获取服务器的 IP 地址
+SERVER_IP=$(get_server_ip)
 
-  sudo apt autoremove -y
-}
+# 设置域名
+read -p "请输入域名（如 example.com）: " DOMAIN
+DOMAIN=${DOMAIN:-"example.com"}
 
-# 检查root权限
-[[ $(id -u) -eq 0 ]] || die "必须使用root权限运行脚本"
+# caddy证书路径
+CERT_DIR="/var/lib/caddy/.local/share/caddy/certificates/acme-v02.api.letsencrypt.org-directory/$DOMAIN"
 
-# 获取服务器IP
-SERVER_IP=$(hostname -I | awk '{print $1}')
-echo -e "\n服务器IP: ${GREEN}${SERVER_IP}${NC}"
+# 变量：邮箱
+read -p "请输入邮箱（默认随机）: " EMAIL
+if [ -z "$EMAIL" ]; then
+    RANDOM_STRING=$(generate_random_string 8)
+    DOMAIN_SUFFIXES=("gmail.com" "sina.com" "yahoo.com")
+    RANDOM_SUFFIX=${DOMAIN_SUFFIXES[$RANDOM % ${#DOMAIN_SUFFIXES[@]}]}
+    EMAIL="$RANDOM_STRING@$RANDOM_SUFFIX"
+fi
 
-# 用户输入处理
-prompt_input DOMAIN "请输入域名（默认 example.com）: " "echo example.com"
-prompt_input EMAIL "请输入邮箱（默认随机生成）: " \
-  "echo \"\$(gen_random_str 6 'a-z')@\$(shuf -e gmail.com sina.com yahoo.com -n1)\""
+# 变量：naiveproxy用户名
+read -p "请输入您的naiveproxy用户名（默认随机）: " AUTH_USER
+if [ -z "$AUTH_USER" ]; then
+    AUTH_USER=$(generate_random_string 8)
+fi
 
-prompt_input AUTH_USER "请输入naiveproxy用户名（默认随机）: " "openssl rand -hex 8"
-prompt_input AUTH_PASS "请输入naiveproxy密码（默认随机）: " "openssl rand -hex 8"
-prompt_input PORT "请输入xray端口（默认10000-20000随机）: " "shuf -i 10000-20000 -n1"
+# 变量：naiveproxy密码
+read -s -p "请输入您的naiveproxy密码（默认随机）: " AUTH_PASS
+echo
+if [ -z "$AUTH_PASS" ]; then
+    AUTH_PASS=$(openssl rand -hex 8)
+fi
 
-# 安装系统依赖
-install_dependencies
+# 变量：xray端口
+read -p "请输入xray端口（默认从10000-20000随机）: " PORT
+if [ -z "$PORT" ]; then
+    PORT=$(generate_random_port)
+fi
+
+# 更新软件包列表并升级系统软件
+echo "正在更新软件包列表并升级系统软件..."
+sudo apt update
+sudo apt install -y curl wget git debian-keyring debian-archive-keyring apt-transport-https crontabs nftables
+sudo apt upgrade -y 
+
+# 运行apt自动清理
+echo "正在运行apt自动清理..."
+sudo apt autoremove -y
 
 # 检查是否需要添加 Caddy 存储库
 if [ ! -f "/usr/share/keyrings/caddy-stable-archive-keyring.gpg" ] || [ ! -f "/etc/apt/sources.list.d/caddy-stable.list" ]; then
     echo "需要添加 Caddy 存储库"
     
     # 添加 Caddy 存储库的 GPG 密钥
+    echo "正在添加 Caddy 存储库的 GPG 密钥..."
     curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
     
     # 添加 Caddy 存储库的信息
+    echo "正在添加 Caddy 存储库的信息..."
     curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
     
     # 更新 apt 软件包列表
+    echo "正在更新 apt 软件包列表..."
     sudo apt update
 
     # 安装 Caddy 软件包
+    echo "正在安装 Caddy 软件包..."
     sudo apt install -y caddy
 fi
 
-#替换xcaddy
-sudo systemctl stop caddy.service
+# 替换xcaddy
 echo "正在下载并替换xcaddy..."
 wget https://github.com/klzgrad/forwardproxy/releases/download/v2.7.6-naive2/caddy-forwardproxy-naive.tar.xz
 tar -xvf caddy-forwardproxy-naive.tar.xz
@@ -115,9 +96,9 @@ sudo cp /root/caddy-forwardproxy-naive/caddy /usr/bin
 # 为 /usr/bin 目录下的 caddy 文件添加执行权限
 sudo chmod +x /usr/bin/caddy
 
-# 生成Caddy配置
-echo -e "\n${GREEN}生成Caddy配置文件...${NC}"
-sudo cat <<EOF > /etc/caddy/Caddyfile
+# 修改Caddyfile
+echo "正在修改Caddyfile..."
+sudo tee /etc/caddy/Caddyfile > /dev/null <<EOF
 :443, $DOMAIN {
     tls $EMAIL
     route {
@@ -136,28 +117,73 @@ sudo cat <<EOF > /etc/caddy/Caddyfile
 EOF
 
 # 重启Caddy服务
-sudo systemctl restart caddy.service || die "Caddy服务启动失败"
+echo "正在重启Caddy服务..."
+sudo systemctl restart caddy.service
 
-# 安装Xray
-echo -e "\n${GREEN}正在安装Xray...${NC}"
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install || die "Xray安装失败"
+# 安装xray
+echo "正在安装xray..."
+bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
 
-# 生成Xray密钥
-echo -e "\n${GREEN}生成Xray密钥...${NC}"
+# 生成 x25519 密钥对并提取私钥和公钥
+echo "正在生成 x25519 密钥对..."
 X25519_KEY=$(xray x25519)
-PRIVATE_KEY=$(awk '/Private key:/ {print $3}' <<< "$X25519_KEY")
-PUBLIC_KEY=$(awk '/Public key:/ {print $3}' <<< "$X25519_KEY")
-RANDOM_UUID=$(xray uuid)
-RANDOM_SHORTID=$(openssl rand -hex 4)
+PRIVATE_KEY=$(echo "$X25519_KEY" | grep "Private key:" | awk '{print $3}')
+PUBLIC_KEY=$(echo "$X25519_KEY" | grep "Public key:" | awk '{print $3}')
 
-# 生成Xray配置
-echo -e "\n${GREEN}生成Xray配置文件...${NC}"
-sudo tee /usr/local/etc/xray/config.json >/dev/null <<EOF
+# 生成随机 UUID
+RANDOM_UUID=$(xray uuid)
+
+# 生成随机的 shortId
+RANDOM_SHORTID=$(openssl rand -hex 8)
+
+# 修改xray配置文件
+echo "正在修改xray配置文件..."
+sudo tee /usr/local/etc/xray/config.json > /dev/null << EOF
 {
   "log": {
     "access": "/var/log/xray/access.log",
     "error": "/var/log/xray/error.log",
     "loglevel": "warning"
+  },
+  "dns": {
+    "servers": [
+      {
+        "address": "https://cloudflare-dns.com/dns-query",
+        "skipFallback": true,
+        "queryStrategy": "UseIP"
+      },
+      {
+        "address": "https://dns.google/dns-query",
+        "skipFallback": true,
+        "queryStrategy": "UseIP"
+      }
+    ]
+  },
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
+      {
+        "type": "field",
+        "ip": [
+          "geoip:private"
+        ],
+        "outboundTag": "block"
+      },
+      {
+        "type": "field",
+        "ip": [
+          "geoip:cn"
+        ],
+        "outboundTag": "block"
+      },
+      {
+        "type": "field",
+        "domain": [
+          "geosite:category-ads-all"
+        ],
+        "outboundTag": "block"
+      }
+    ]
   },
   "inbounds": [
     {
@@ -171,46 +197,81 @@ sudo tee /usr/local/etc/xray/config.json >/dev/null <<EOF
           }
         ],
         "decryption": "none",
-        "fallbacks": [{"dest": 6666}]
+        "fallbacks": [
+          {
+            "dest": 6666
+          }
+        ]
       },
       "streamSettings": {
         "network": "tcp",
         "security": "reality",
         "realitySettings": {
           "show": true,
-          "dest": "${DOMAIN@Q}:443",
-          "serverNames": ["${DOMAIN@Q}"],
+          "dest": "$DOMAIN:443",
+          "serverNames": [
+            "$DOMAIN"
+          ],
           "privateKey": "$PRIVATE_KEY",
-          "shortIds": ["$RANDOM_SHORTID"],
+          "shortIds": [
+            "$RANDOM_SHORTID"
+          ],
           "publicKey": "$PUBLIC_KEY"
+        }
+      }
+    },
+    {
+      "port": 6666,
+      "protocol": "trojan",
+      "settings": {
+        "clients": [
+          {
+            "email": "$EMAIL",
+            "password": "$RANDOM_UUID",
+            "level": 0
+          }
+        ],
+        "fallbacks": [
+          {
+            "dest": 80
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "none",
+        "tcpSettings": {
+          "acceptProxyProtocol": true
         }
       }
     }
   ],
   "outbounds": [
-    {"protocol": "freedom", "tag": "direct"},
-    {"protocol": "blackhole", "tag": "block"}
+    {
+      "tag": "direct",
+      "protocol": "freedom"
+    },
+    {
+      "tag": "block",
+      "protocol": "blackhole"
+    }
   ]
 }
 EOF
-
-# 重启Xray服务
-sudo systemctl restart xray.service || die "Xray服务启动失败"
 
 # 删除下载的文件和解压后的目录
 rm -rf /root/caddy-forwardproxy-naive
 rm -f /root/caddy-forwardproxy-naive.tar.xz
 
-# 输出配置信息
-echo -e "\n${GREEN}======== 安装完成 ========${NC}"
-echo -e "VLESS链接：\n${GREEN}vless://$RANDOM_UUID@$SERVER_IP:$PORT?encryption=none&flow=xtls-rprx-vision&security=reality&sni=$DOMAIN&fp=chrome&pbk=$PUBLIC_KEY&sid=$RANDOM_SHORTID&type=tcp&headerType=none#xray-reality${NC}"
+# 重启服务
+echo "正在重启xray服务..."
+sudo systemctl restart xray.service
 
-echo -e "\nNaiveProxy配置已保存到 ${GREEN}/root/naive.json${NC}"
-sudo tee /root/naive.json >/dev/null <<EOF
-{
-  "listen": "socks://127.0.0.1:1080",
-  "proxy": "https://${AUTH_USER@Q}:${AUTH_PASS@Q}@${DOMAIN@Q}"
-}
-EOF
+echo 
 
-echo -e "\n${YELLOW}提示：\n1. 请确保域名 ${DOMAIN} 已解析到本机IP\n2. 防火墙需要开放 $PORT 和 443 端口${NC}"
+# 输出VLESS和Hysteria的连接信息
+echo "正在生成配置文件..."
+echo "vless://$RANDOM_UUID@$SERVER_IP:$PORT?encryption=none&flow=xtls-rprx-vision&security=reality&sni=$DOMAIN&fp=chrome&pbk=$PUBLIC_KEY&sid=$RANDOM_SHORTID&type=tcp&headerType=none#xray-reality" > /root/vless_config.json
+echo "{\"listen\": \"socks://127.0.0.1:1080\",\"proxy\": \"https://$AUTH_USER:$AUTH_PASS@$DOMAIN\"}" > /root/naive.json
+
+echo "安装完成"
