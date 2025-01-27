@@ -107,9 +107,12 @@ if [ ! -f "/usr/share/keyrings/caddy-stable-archive-keyring.gpg" ] || [ ! -f "/e
 fi
 
 #替换xcaddy
+sudo systemctl stop caddy.service
+echo "正在下载并替换xcaddy..."
 wget https://github.com/klzgrad/forwardproxy/releases/download/v2.7.6-naive2/caddy-forwardproxy-naive.tar.xz
 tar -xvf caddy-forwardproxy-naive.tar.xz
 sudo cp /root/caddy-forwardproxy-naive/caddy /usr/bin
+# 为 /usr/bin 目录下的 caddy 文件添加执行权限
 sudo chmod +x /usr/bin/caddy
 
 # 生成Caddy配置
