@@ -49,8 +49,10 @@ if [ ! -f "/usr/share/keyrings/caddy-stable-archive-keyring.gpg" ] || [ ! -f "/e
     echo "添加 Caddy 存储库"
     curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
     curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
-    sudo apt update && sudo apt install -y caddy
 fi
+
+#安装caddy
+sudo apt update && sudo apt install -y caddy
 
 # 替换 Caddy 为 xcaddy
 sudo systemctl stop caddy.service
