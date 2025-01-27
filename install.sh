@@ -1,6 +1,16 @@
 #!/bin/bash
 set -euo pipefail
 
+# 检查是否以root权限运行
+if [ "$(id -u)" -ne 0 ]; then
+    die "此脚本需要以root权限运行，请使用sudo执行。"
+fi
+
+# 检查系统是否为Debian或Ubuntu
+if ! grep -qiE 'debian|ubuntu' /etc/*release; then
+    die "此脚本仅适用于Debian或Ubuntu系统，请手动安装依赖。"
+fi
+
 # 定义颜色代码和重置符号
 readonly CRED='\033[0;31m'
 readonly CGRN='\033[0;32m'
@@ -81,7 +91,7 @@ main() {
     # 用户输入处理
     read -p "请输入邮箱（默认随机）: " EMAIL
     if [[ -z "$EMAIL" ]]; then
-        EMAIL="$(generate_random 8 'a-z')@$(generate_random 5-8 'a-z').com"
+        EMAIL="$(generate_random 8 'a-z')@$(generate_random 5 - 8 'a-z').com"
     fi
 
     read -p "请输入naiveproxy用户名（默认随机）: " AUTH_USER
@@ -91,8 +101,8 @@ main() {
     echo
     readonly AUTH_PASS=${AUTH_PASS:-$(openssl rand -hex 12)}
 
-    read -p "请输入xray端口（默认10000-20000随机）: " PORT
-    readonly PORT=${PORT:-$(shuf -i 10000-20000 -n 1)}
+    read -p "请输入xray端口（默认10000 - 20000随机）: " PORT
+    readonly PORT=${PORT:-$(shuf -i 10000 - 20000 -n 1)}
 
     # 系统更新
     echo -e "${CYEL}[1/7] 更新系统组件...${CRST}"
@@ -120,22 +130,20 @@ main() {
 
     # 安装Caddy（使用自定义编译版本）
     echo -e "${CYEL}[4/7] 配置Caddy服务...${CRST}"
-    if ! [[ -f /usr/bin/caddy ]]; then
-        curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-        curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' > /etc/apt/sources.list.d/caddy-stable.list
-        apt-get -qq update
-        apt-get -qq install -y caddy
+    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' > /etc/apt/sources.list.d/caddy-stable.list
+    apt-get -qq update
+    apt-get -qq install -y caddy
 
-        # 编译自定义Caddy
-        go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
-        ~/go/bin/xcaddy build --with github.com/caddyserver/forwardproxy=github.com/klzgrad/forwardproxy@naive
-        systemctl stop caddy
-        mv caddy /usr/bin/
-    fi
+    # 编译自定义Caddy
+    go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
+    ~/go/bin/xcaddy build --with github.com/caddyserver/forwardproxy=github.com/klzgrad/forwardproxy@naive
+    systemctl stop caddy
+    mv caddy /usr/bin/
 
     # 配置Caddyfile
     echo -e "${CYEL}[5/7] 生成Caddy配置...${CRST}"
-cat > /etc/caddy/Caddyfile <<-EOF
+    cat > /etc/caddy/Caddyfile <<-EOF
 :80 {
     redir https://{host}{uri} permanent
 }
@@ -151,7 +159,7 @@ ${DOMAIN}:443 {
         }
         reverse_proxy https://www.coze.com {
             header_up Host {upstream_hostport}
-            header_up X-Forwarded-Host {host}
+            header_up X - Forwarded - Host {host}
         }
     }
 }
@@ -173,8 +181,7 @@ EOF
     readonly RANDOM_SHORTID=$(openssl rand -hex 4)
 
     # 生成Xray配置
-# 生成Xray配置（使用<<EOF顶格写法）
-cat > /usr/local/etc/xray/config.json <<EOF
+    cat > /usr/local/etc/xray/config.json <<EOF
 {
     "log": { "loglevel": "warning" },
     "routing": {
@@ -213,8 +220,16 @@ cat > /usr/local/etc/xray/config.json <<EOF
 }
 EOF
 
-# 输出配置信息（使用<<-EOF + tab缩进）
-cat <<-EOF
+    # 生成NaiveProxy配置文件
+    cat > /root/naive.json <<EOF
+{
+    "listen": "socks://127.0.0.1:1080",
+    "proxy": "https://${AUTH_USER}:${AUTH_PASS}@${DOMAIN}"
+}
+EOF
+
+    # 输出配置信息
+    cat <<-EOF
 
     ${CGRN}=== 安装完成 ===${CRST}
     ${CYEL}服务器IP: ${CGRN}${SERVER_IP}
