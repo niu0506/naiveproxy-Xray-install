@@ -23,13 +23,6 @@ die() {
     exit 1
 }
 
-# 生成随机字符串函数
-generate_random() {
-    local length=${1:-8}
-    local charset=${2:-'a-zA-Z0-9'}
-    tr -dc "$charset" < /dev/urandom | head -c "$length"
-}
-
 # 检查服务状态
 check_service() {
     if ! systemctl is-active --quiet "$1"; then
@@ -91,18 +84,23 @@ main() {
     # 用户输入处理
     read -p "请输入邮箱（默认随机）: " EMAIL
     if [[ -z "$EMAIL" ]]; then
-        EMAIL="$(generate_random 8 'a-z')@$(generate_random 5 - 8 'a-z').com"
+        # 不使用 generate_random，直接生成随机邮箱
+        EMAIL=$(openssl rand -hex 4)@$(openssl rand -hex 3).com
     fi
 
     read -p "请输入naiveproxy用户名（默认随机）: " AUTH_USER
-    readonly AUTH_USER=${AUTH_USER:-$(generate_random 12)}
+    if [[ -z "$AUTH_USER" ]]; then
+        # 不使用 generate_random，直接生成随机用户名
+        AUTH_USER=$(openssl rand -hex 6)
+    fi
+    readonly AUTH_USER
 
     read -s -p "请输入naiveproxy密码（默认随机）: " AUTH_PASS
     echo
     readonly AUTH_PASS=${AUTH_PASS:-$(openssl rand -hex 12)}
 
-    read -p "请输入xray端口（默认10000 - 20000随机）: " PORT
-    readonly PORT=${PORT:-$(shuf -i 10000 - 20000 -n 1)}
+    read -p "请输入xray端口（默认10000-20000随机）: " PORT
+    readonly PORT=${PORT:-$(shuf -i 10000-20000 -n 1)}
 
     # 系统更新
     echo -e "${CYEL}[1/7] 更新系统组件...${CRST}"
@@ -159,7 +157,7 @@ ${DOMAIN}:443 {
         }
         reverse_proxy https://www.coze.com {
             header_up Host {upstream_hostport}
-            header_up X - Forwarded - Host {host}
+            header_up X-Forwarded-Host {host}
         }
     }
 }
@@ -230,14 +228,6 @@ EOF
 
     # 输出配置信息
     cat <<-EOF
-
-    ${CGRN}=== 安装完成 ===${CRST}
-    ${CYEL}服务器IP: ${CGRN}${SERVER_IP}
-    ${CYEL}连接端口: ${CGRN}${PORT}
-    ${CYEL}用户UUID: ${CGRN}${RANDOM_UUID}
-    ${CYEL}公钥(PBK): ${CGRN}${PUBLIC_KEY}
-    ${CYEL}短ID(SID): ${CGRN}${RANDOM_SHORTID}
-    ${CYEL}域名(SNI): ${CGRN}${DOMAIN}
 
     ${CGRN}VLESS 链接:${CRST}
     vless://${RANDOM_UUID}@${SERVER_IP}:${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=${DOMAIN}&fp=chrome&pbk=${PUBLIC_KEY}&sid=${RANDOM_SHORTID}&type=tcp#xray-reality
