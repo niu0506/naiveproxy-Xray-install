@@ -220,6 +220,9 @@ EOF
 }
 EOF
 
+    # 重启xray服务
+    systemctl restart caddy.service
+
     # 输出配置信息
     cat <<-EOF
 
