@@ -1,5 +1,28 @@
 #!/bin/bash
 
+# 遇到错误立即退出
+set -e
+
+# 定义清理函数，在脚本退出时执行
+cleanup() {
+    local exit_code=$?
+    # 删除临时文件和目录
+    rm -rf /root/caddy-forwardproxy-naive
+    rm -f /root/caddy-forwardproxy-naive.tar.xz
+    if [ $exit_code -ne 0 ]; then
+        echo "脚本执行过程中出现错误，已停止。退出状态码: $exit_code"
+    fi
+}
+
+# 注册清理函数，在脚本退出时调用
+trap cleanup EXIT
+
+# 检查是否以 root 用户身份运行
+if [ "$EUID" -ne 0 ]; then
+    echo "请以 root 用户身份运行此脚本。"
+    exit 1
+fi
+
 # 获取服务器的 IP 地址
 SERVER_IP=$(hostname -I | awk '{print $1}')
 
@@ -41,7 +64,7 @@ if [ -z "$PORT" ]; then
 fi
 
 # 更新并安装基础软件
-sudo apt update && sudo apt install -y curl wget git gnupg debian-keyring debian-archive-keyring apt-transport-https
+sudo apt update && sudo apt install -y curl wget git gpg debian-keyring debian-archive-keyring apt-transport-https
 sudo apt upgrade -y && sudo apt autoremove -y
 
 # 添加 Caddy 存储库并安装
