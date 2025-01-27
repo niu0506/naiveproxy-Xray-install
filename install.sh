@@ -41,7 +41,7 @@ if [ -z "$PORT" ]; then
 fi
 
 # 更新并安装基础软件
-sudo apt update && sudo apt install -y curl wget git gnupg debian-keyring debian-archive-keyring apt-transport-https crontabs nftables
+sudo apt update && sudo apt install -y curl wget git gnupg debian-keyring debian-archive-keyring apt-transport-https
 sudo apt upgrade -y && sudo apt autoremove -y
 
 # 添加 Caddy 存储库并安装
