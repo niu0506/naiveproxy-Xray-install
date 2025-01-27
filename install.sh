@@ -68,7 +68,7 @@ main() {
 
     # 基本信息配置
     readonly SERVER_IP=$(get_server_ip)
-    read -p "请输入域名（如 example.com）: " DOMAIN
+    read -p "请输入解析好的二级域名（如 xx.example.com）: " DOMAIN
     readonly DOMAIN=${DOMAIN:-"example.com"}
 
     # 验证域名解析
