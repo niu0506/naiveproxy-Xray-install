@@ -66,9 +66,13 @@ if [ ! -f "/usr/share/keyrings/caddy-stable-archive-keyring.gpg" ] || [ ! -f "/e
 fi
 
 #替换xcaddy
+sudo systemctl stop caddy.service
+echo "正在下载并替换xcaddy..."
 wget https://github.com/klzgrad/forwardproxy/releases/download/v2.7.6-naive2/caddy-forwardproxy-naive.tar.xz
 tar -xvf caddy-forwardproxy-naive.tar.xz
-sudo cp /root/caddy /usr/bin
+sudo cp /root/caddy-forwardproxy-naive/caddy /usr/bin
+# 为 /usr/bin 目录下的 caddy 文件添加执行权限
+sudo chmod +x /usr/bin/caddy
 
 # 修改Caddyfile
 sudo cat <<EOF > /etc/caddy/Caddyfile
@@ -230,12 +234,16 @@ sudo cat << EOF > /usr/local/etc/xray/config.json
 }
 EOF
 
+# 删除下载的文件和解压后的目录
+rm -rf /root/caddy-forwardproxy-naive
+rm -f /root/caddy-forwardproxy-naive.tar.xz
+
 # 重启服务
 sudo systemctl restart xray.service
 
 echo 
 
-# 输出VLESS和Hysteria的连接信息
+# 输出VLESS连接信息
 echo "vless://$RANDOM_UUID@$SERVER_IP:$PORT?encryption=none&flow=xtls-rprx-vision&security=reality&sni=$DOMAIN&fp=chrome&pbk=$PUBLIC_KEY&sid=$RANDOM_SHORTID&type=tcp&headerType=none#xray-reality" > /root/vless_config.json
 echo "{\"listen\": \"socks://127.0.0.1:1080\",\"proxy\": \"https://$AUTH_USER:$AUTH_PASS@$DOMAIN\"}" > /root/naive.json
 
