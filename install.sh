@@ -45,11 +45,9 @@ sudo apt update && sudo apt install -y curl wget git debian-keyring debian-archi
 sudo apt upgrade -y && sudo apt autoremove -y
 
 # 添加 Caddy 存储库并安装
-if [ ! -f "/usr/share/keyrings/caddy-stable-archive-keyring.gpg" ] || [ ! -f "/etc/apt/sources.list.d/caddy-stable.list" ]; then
     echo "添加 Caddy 存储库"
     curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
     curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
-fi
 
 #安装caddy
 sudo apt update
