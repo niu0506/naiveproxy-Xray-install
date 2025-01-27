@@ -81,6 +81,10 @@ sudo cat <<EOF > /etc/caddy/Caddyfile
 }
 EOF
 
+# 删除下载的文件和解压后的目录
+rm -rf /root/caddy-forwardproxy-naive
+rm -f /root/caddy-forwardproxy-naive.tar.xz
+
 # 重启Caddy服务
 sudo systemctl restart caddy.service
 
