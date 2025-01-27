@@ -52,7 +52,8 @@ if [ ! -f "/usr/share/keyrings/caddy-stable-archive-keyring.gpg" ] || [ ! -f "/e
 fi
 
 #安装caddy
-sudo apt update && sudo apt install -y caddy
+sudo apt update
+sudo apt install -y caddy
 
 #替换xcaddy
 sudo systemctl stop caddy.service
