@@ -96,7 +96,7 @@ sudo cat <<EOF > /etc/caddy/Caddyfile
             hide_via
             probe_resistance
         }
-        reverse_proxy https://www.coze.com { 
+        reverse_proxy https://www.bing.com { 
             header_up Host {upstream_hostport}
             header_up X-Forwarded-Host {host}
         }
@@ -127,7 +127,6 @@ RANDOM_SHORTID=$(openssl rand -hex 8)
 sudo cat << EOF > /usr/local/etc/xray/config.json
 {
   "log": {
-    "access": "/var/log/xray/access.log",
     "error": "/var/log/xray/error.log",
     "loglevel": "warning"
   },
@@ -135,12 +134,10 @@ sudo cat << EOF > /usr/local/etc/xray/config.json
     "servers": [
       {
         "address": "https://cloudflare-dns.com/dns-query",
-        "skipFallback": true,
         "queryStrategy": "UseIP"
       },
       {
         "address": "https://dns.google/dns-query",
-        "skipFallback": true,
         "queryStrategy": "UseIP"
       }
     ]
@@ -149,37 +146,68 @@ sudo cat << EOF > /usr/local/etc/xray/config.json
     "domainStrategy": "IPIfNonMatch",
     "rules": [
       {
-        "type": "field",
-        "ip": [
-          "geoip:private"
+        "inboundTag": [
+          "dokodemo-in"
+        ],
+        "domain": [
+          "$DOMAIN"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "inboundTag": [
+          "dokodemo-in"
         ],
         "outboundTag": "block"
       },
       {
-        "type": "field",
         "ip": [
+          "geoip:private",
           "geoip:cn"
         ],
-        "outboundTag": "block"
-      },
-      {
-        "type": "field",
         "domain": [
-          "geosite:category-ads-all"
+          "geosite:category-ads-all",
+          "geosite:cn"
         ],
         "outboundTag": "block"
       }
     ]
   },
   "inbounds": [
+      {
+      "tag": "dokodemo-in",
+      "port": 8080,
+      "protocol": "dokodemo-door",
+      "settings": {
+        "address": "127.0.0.1",
+        "port": $PORT,
+        "network": "tcp"
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "tls"
+        ],
+        "routeOnly": true
+      }
+    },
     {
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ],
+        "routeOnly": true
+      },
+      "listen": "0.0.0.0",
       "port": $PORT,
       "protocol": "vless",
       "settings": {
         "clients": [
           {
-            "id": "$RANDOM_UUID",
-            "flow": "xtls-rprx-vision"
+            "id": "$RANDOM_UUID"
           }
         ],
         "decryption": "none",
@@ -190,10 +218,20 @@ sudo cat << EOF > /usr/local/etc/xray/config.json
         ]
       },
       "streamSettings": {
-        "network": "tcp",
+        "network": "xhttp",
+        "xhttpSettings": {
+          "host": "$DOMAIN",
+          "path": "/xhttp",
+          "mode": "auto",
+          "extra": {
+            "headers": {
+              "key": "value"
+            },
+            "xPaddingBytes": "100-1000"
+          }
+        },
         "security": "reality",
         "realitySettings": {
-          "show": true,
           "dest": "$DOMAIN:443",
           "serverNames": [
             "$DOMAIN"
@@ -201,8 +239,7 @@ sudo cat << EOF > /usr/local/etc/xray/config.json
           "privateKey": "$PRIVATE_KEY",
           "shortIds": [
             "$RANDOM_SHORTID"
-          ],
-          "publicKey": "$PUBLIC_KEY"
+          ]
         }
       }
     },
@@ -251,7 +288,7 @@ sudo systemctl restart xray.service
 echo 
 
 # 输出VLESS连接信息
-echo "vless://$RANDOM_UUID@$SERVER_IP:$PORT?encryption=none&flow=xtls-rprx-vision&security=reality&sni=$DOMAIN&fp=chrome&pbk=$PUBLIC_KEY&sid=$RANDOM_SHORTID&type=tcp&headerType=none#xray-reality" > /root/vless_config.json
+echo "vless://$RANDOM_UUID@$SERVER_IP:$PORT?encryption=none&security=reality&sni=$DOMAIN&fp=chrome&pbk=$PUBLIC_KEY&sid=$RANDOM_SHORTID&type=xhttp&host=$DOMAIN&path=%2Fxhttp&mode=auto#xray-reality" > /root/vless_config.json
 echo "{\"listen\": \"socks://127.0.0.1:1080\",\"proxy\": \"https://$AUTH_USER:$AUTH_PASS@$DOMAIN\"}" > /root/naive.json
 
 echo "安装完成"
