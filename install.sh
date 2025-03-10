@@ -64,29 +64,29 @@ if [ -z "$PORT" ]; then
 fi
 
 # 更新并安装基础软件
-sudo apt update && sudo apt install -y curl wget git gpg debian-keyring debian-archive-keyring apt-transport-https
-sudo apt upgrade -y && sudo apt autoremove -y
+apt update && apt install -y curl wget git gpg debian-keyring debian-archive-keyring apt-transport-https
+apt upgrade -y && apt autoremove -y
 
 # 添加 Caddy 存储库并安装
-    echo "添加 Caddy 存储库"
-    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+echo "添加 Caddy 存储库"
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
 
-#安装caddy
-sudo apt update
-sudo apt install -y caddy
+# 安装caddy
+apt update
+apt install -y caddy
 
-#替换xcaddy
-sudo systemctl stop caddy.service
+# 替换xcaddy
+systemctl stop caddy.service
 echo "正在下载并替换xcaddy..."
 wget https://github.com/klzgrad/forwardproxy/releases/download/v2.7.6-naive2/caddy-forwardproxy-naive.tar.xz
 tar -xvf caddy-forwardproxy-naive.tar.xz
-sudo cp /root/caddy-forwardproxy-naive/caddy /usr/bin
+cp /root/caddy-forwardproxy-naive/caddy /usr/bin
 # 为 /usr/bin 目录下的 caddy 文件添加执行权限
-sudo chmod +x /usr/bin/caddy
+chmod +x /usr/bin/caddy
 
 # 修改Caddyfile
-sudo cat <<EOF > /etc/caddy/Caddyfile
+cat <<EOF > /etc/caddy/Caddyfile
 :443, $DOMAIN {
     tls $EMAIL
     route {
@@ -109,9 +109,9 @@ rm -rf /root/caddy-forwardproxy-naive
 rm -f /root/caddy-forwardproxy-naive.tar.xz
 
 # 重启Caddy服务
-sudo systemctl restart caddy.service
+systemctl restart caddy.service
 
-# 安装xay
+# 安装xray
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
 
 # 生成 X25519 密钥对并提取私钥和公钥
@@ -124,7 +124,7 @@ RANDOM_UUID=$(xray uuid)
 RANDOM_SHORTID=$(openssl rand -hex 8)
 
 # 修改xray配置文件
-sudo cat << EOF > /usr/local/etc/xray/config.json
+cat << EOF > /usr/local/etc/xray/config.json
 {
   "log": {
     "error": "/var/log/xray/error.log",
@@ -283,7 +283,7 @@ sudo cat << EOF > /usr/local/etc/xray/config.json
 EOF
 
 # 重启服务
-sudo systemctl restart xray.service
+systemctl restart xray.service
 
 echo 
 
