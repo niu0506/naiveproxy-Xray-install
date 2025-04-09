@@ -30,9 +30,6 @@ SERVER_IP=$(hostname -I | awk '{print $1}')
 read -p "请输入域名（如 example.com）: " DOMAIN
 DOMAIN=${DOMAIN:-"example.com"}
 
-# caddy证书路径
-CERT_DIR="/var/lib/caddy/.local/share/caddy/certificates/acme-v02.api.letsencrypt.org-directory/$DOMAIN"
-
 # 变量
 read -p "请输入邮箱（默认随机）: " EMAIL
 
@@ -68,16 +65,16 @@ apt update && apt install -y curl wget git gpg debian-keyring debian-archive-key
 apt upgrade -y && apt autoremove -y
 
 # 添加 Caddy 存储库并安装
-echo "添加 Caddy 存储库"
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
+    echo "添加 Caddy 存储库"
+    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
 
-# 安装caddy
+#安装caddy
 apt update
 apt install -y caddy
 
-# 替换xcaddy
-systemctl stop caddy.service
+#替换xcaddy
+systemctl stop caddy
 echo "正在下载并替换xcaddy..."
 wget https://github.com/klzgrad/forwardproxy/releases/download/v2.7.6-naive2/caddy-forwardproxy-naive.tar.xz
 tar -xvf caddy-forwardproxy-naive.tar.xz
@@ -96,9 +93,14 @@ cat <<EOF > /etc/caddy/Caddyfile
             hide_via
             probe_resistance
         }
-        reverse_proxy https://www.bing.com { 
+        reverse_proxy https://www.coze.com { 
             header_up Host {upstream_hostport}
             header_up X-Forwarded-Host {host}
+            header_up Accept-Encoding gzip
+            transport http {
+                dial_timeout 5s
+                keepalive 60s
+            }            
         }
     }
 }
@@ -109,9 +111,9 @@ rm -rf /root/caddy-forwardproxy-naive
 rm -f /root/caddy-forwardproxy-naive.tar.xz
 
 # 重启Caddy服务
-systemctl restart caddy.service
+systemctl restart caddy
 
-# 安装xray
+# 安装xay
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
 
 # 生成 X25519 密钥对并提取私钥和公钥
@@ -127,6 +129,7 @@ RANDOM_SHORTID=$(openssl rand -hex 8)
 cat << EOF > /usr/local/etc/xray/config.json
 {
   "log": {
+    "access": "/var/log/xray/access.log",
     "error": "/var/log/xray/error.log",
     "loglevel": "warning"
   },
@@ -159,7 +162,7 @@ cat << EOF > /usr/local/etc/xray/config.json
           "dokodemo-in"
         ],
         "outboundTag": "block"
-      },
+      },    	
       {
         "ip": [
           "geoip:private",
@@ -174,7 +177,7 @@ cat << EOF > /usr/local/etc/xray/config.json
     ]
   },
   "inbounds": [
-      {
+    {
       "tag": "dokodemo-in",
       "port": 8080,
       "protocol": "dokodemo-door",
@@ -182,17 +185,10 @@ cat << EOF > /usr/local/etc/xray/config.json
         "address": "127.0.0.1",
         "port": $PORT,
         "network": "tcp"
-      },
-      "sniffing": {
-        "enabled": true,
-        "destOverride": [
-          "tls"
-        ],
-        "routeOnly": true
       }
-    },
+    },  
     {
-      "sniffing": {
+	"sniffing": {
         "enabled": true,
         "destOverride": [
           "http",
@@ -201,13 +197,14 @@ cat << EOF > /usr/local/etc/xray/config.json
         ],
         "routeOnly": true
       },
-      "listen": "0.0.0.0",
+	  "listen": "0.0.0.0",
       "port": $PORT,
       "protocol": "vless",
       "settings": {
         "clients": [
           {
-            "id": "$RANDOM_UUID"
+            "id": "$RANDOM_UUID",
+            "flow": "xtls-rprx-vision"
           }
         ],
         "decryption": "none",
@@ -218,20 +215,10 @@ cat << EOF > /usr/local/etc/xray/config.json
         ]
       },
       "streamSettings": {
-        "network": "xhttp",
-        "xhttpSettings": {
-          "host": "$DOMAIN",
-          "path": "/xhttp",
-          "mode": "auto",
-          "extra": {
-            "headers": {
-              "key": "value"
-            },
-            "xPaddingBytes": "100-1000"
-          }
-        },
+        "network": "tcp",
         "security": "reality",
         "realitySettings": {
+          "show": true,
           "dest": "$DOMAIN:443",
           "serverNames": [
             "$DOMAIN"
@@ -239,7 +226,8 @@ cat << EOF > /usr/local/etc/xray/config.json
           "privateKey": "$PRIVATE_KEY",
           "shortIds": [
             "$RANDOM_SHORTID"
-          ]
+          ],
+          "publicKey": "$PUBLIC_KEY"
         }
       }
     },
@@ -288,7 +276,8 @@ systemctl restart xray.service
 echo 
 
 # 输出VLESS连接信息
-echo "vless://$RANDOM_UUID@$SERVER_IP:$PORT?encryption=none&security=reality&sni=$DOMAIN&fp=chrome&pbk=$PUBLIC_KEY&sid=$RANDOM_SHORTID&type=xhttp&host=$DOMAIN&path=%2Fxhttp&mode=auto#xray-reality" > /root/vless_config.json
+echo "vless://$RANDOM_UUID@$SERVER_IP:$PORT?encryption=none&flow=xtls-rprx-vision&security=reality&sni=$DOMAIN&fp=chrome&pbk=$PUBLIC_KEY&sid=$RANDOM_SHORTID&type=tcp&headerType=none#xray-reality" > /root/vless_config.json
+echo "VLESS 配置已保存至 /root/vless_config.json"
 echo "{\"listen\": \"socks://127.0.0.1:1080\",\"proxy\": \"https://$AUTH_USER:$AUTH_PASS@$DOMAIN\"}" > /root/naive.json
-
+echo "Naiveproxy 配置已保存至 /root/naive.json"
 echo "安装完成"
