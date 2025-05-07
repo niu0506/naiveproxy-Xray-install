@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# 常量定义
+
 declare -A SYSCTL_SETTINGS=(
     ["net.ipv4.tcp_rmem"]="4096	87380	6291456"
     ["net.ipv4.tcp_wmem"]="4096	87380	6291456"
