@@ -76,7 +76,7 @@ apt install -y caddy
 #替换xcaddy
 systemctl stop caddy
 echo "正在下载并替换xcaddy..."
-wget https://github.com/klzgrad/forwardproxy/releases/download/v2.7.6-naive2/caddy-forwardproxy-naive.tar.xz
+wget https://github.com/klzgrad/forwardproxy/releases/download/v2.10.0-naive/caddy-forwardproxy-naive.tar.xz
 tar -xvf caddy-forwardproxy-naive.tar.xz
 cp /root/caddy-forwardproxy-naive/caddy /usr/bin
 # 为 /usr/bin 目录下的 caddy 文件添加执行权限
@@ -85,22 +85,19 @@ chmod +x /usr/bin/caddy
 # 修改Caddyfile
 cat <<EOF > /etc/caddy/Caddyfile
 :443, $DOMAIN {
-    tls $EMAIL
-    route {
+tls $EMAIL
+    handle {
         forward_proxy {
             basic_auth $AUTH_USER $AUTH_PASS
             hide_ip
             hide_via
             probe_resistance
         }
-        reverse_proxy https://www.coze.com { 
+    }
+    handle {
+        reverse_proxy https://www.coze.com {
             header_up Host {upstream_hostport}
             header_up X-Forwarded-Host {host}
-            header_up Accept-Encoding gzip
-            transport http {
-                dial_timeout 5s
-                keepalive 60s
-            }            
         }
     }
 }
