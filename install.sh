@@ -215,7 +215,7 @@ cat << EOF > /usr/local/etc/xray/config.json
         "network": "tcp",
         "security": "reality",
         "realitySettings": {
-          "show": true,
+          "show": false,
           "dest": "$DOMAIN:443",
           "serverNames": [
             "$DOMAIN"
