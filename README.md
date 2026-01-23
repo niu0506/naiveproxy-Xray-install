@@ -7,7 +7,7 @@
 运行以下命令来优化Linux：
 
 ```
-bash <(curl -fsSL "https://raw.githubusercontent.com/niu0506/naiveproxy-hysteria-Xray-install/main/bbr.sh")
+bash <(curl -fsSL "https://raw.githubusercontent.com/niu0506/naiveproxy-Xray-install/main/bbr.sh")
 ```
 
 ## 安装
@@ -15,7 +15,7 @@ bash <(curl -fsSL "https://raw.githubusercontent.com/niu0506/naiveproxy-hysteria
 运行以下命令来安装 NaiveProxy 和 Xray：
 
 ```
-bash <(curl -fsSL "https://raw.githubusercontent.com/niu0506/naiveproxy-hysteria-Xray-install/main/install.sh")
+bash <(curl -fsSL "https://raw.githubusercontent.com/niu0506/naiveproxy-Xray-install/main/install.sh")
 
 ```
 
