@@ -116,7 +116,7 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 # 生成 X25519 密钥对并提取私钥和公钥
 X25519_KEY=$(xray x25519)
 PRIVATE_KEY=$(echo "$X25519_KEY" | grep "PrivateKey:" | awk '{print $2}')
-PUBLIC_KEY=$(echo "$X25519_KEY" | grep "PublicKey:" | awk '{print $2}')
+PUBLIC_KEY=$(echo "$X25519_KEY" | grep "Password:" | awk '{print $2}')
 
 # 生成随机 UUID 和 shortId
 RANDOM_UUID=$(xray uuid)
