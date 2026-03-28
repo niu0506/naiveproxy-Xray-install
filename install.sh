@@ -65,9 +65,9 @@ apt update && apt install -y curl wget git gpg debian-keyring debian-archive-key
 apt upgrade -y && apt autoremove -y
 
 # 添加 Caddy 存储库并安装
-    echo "添加 Caddy 存储库"
-    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
+echo "添加 Caddy 存储库"
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
 
 #安装caddy
 apt update
@@ -110,7 +110,7 @@ rm -f /root/caddy-forwardproxy-naive.tar.xz
 # 重启Caddy服务
 systemctl restart caddy
 
-# 安装xay
+# 安装xray
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
 
 # 生成 X25519 密钥对并提取私钥和公钥
@@ -223,8 +223,7 @@ cat << EOF > /usr/local/etc/xray/config.json
           "privateKey": "$PRIVATE_KEY",
           "shortIds": [
             "$RANDOM_SHORTID"
-          ],
-          "publicKey": "$PUBLIC_KEY"
+          ]
         }
       }
     },
