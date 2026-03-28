@@ -114,13 +114,30 @@ systemctl restart caddy
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
 
 # 生成 X25519 密钥对并提取私钥和公钥
+echo "正在生成 X25519 密钥对..."
 X25519_KEY=$(xray x25519)
+echo "$X25519_KEY"
+
 PRIVATE_KEY=$(echo "$X25519_KEY" | grep "PrivateKey:" | awk '{print $2}')
-PUBLIC_KEY=$(echo "$X25519_KEY" | grep "Password (PublicKey):" | awk '{print $3}')
+PUBLIC_KEY=$(echo "$X25519_KEY" | grep -E "(Password|PublicKey)" | awk '{print $NF}')
+
+# 验证是否成功提取
+if [ -z "$PRIVATE_KEY" ] || [ -z "$PUBLIC_KEY" ]; then
+    echo "错误：无法提取密钥对"
+    echo "PrivateKey: $PRIVATE_KEY"
+    echo "PublicKey: $PUBLIC_KEY"
+    exit 1
+fi
+
+echo "私钥: $PRIVATE_KEY"
+echo "公钥: $PUBLIC_KEY"
 
 # 生成随机 UUID 和 shortId
 RANDOM_UUID=$(xray uuid)
 RANDOM_SHORTID=$(openssl rand -hex 8)
+
+echo "UUID: $RANDOM_UUID"
+echo "ShortID: $RANDOM_SHORTID"
 
 # 修改xray配置文件
 cat << EOF > /usr/local/etc/xray/config.json
@@ -270,10 +287,23 @@ EOF
 systemctl restart xray.service
 
 echo 
+echo "=========================================="
+echo "安装完成！配置信息如下："
+echo "=========================================="
 
 # 输出VLESS连接信息
-echo "vless://$RANDOM_UUID@$SERVER_IP:$PORT?encryption=none&flow=xtls-rprx-vision&security=reality&sni=$DOMAIN&fp=chrome&pbk=$PUBLIC_KEY&sid=$RANDOM_SHORTID&type=tcp&headerType=none#xray-reality" > /root/vless_config.json
+VLESS_LINK="vless://$RANDOM_UUID@$SERVER_IP:$PORT?encryption=none&flow=xtls-rprx-vision&security=reality&sni=$DOMAIN&fp=chrome&pbk=$PUBLIC_KEY&sid=$RANDOM_SHORTID&type=tcp&headerType=none#xray-reality"
+echo "$VLESS_LINK" > /root/vless_config.json
 echo "VLESS 配置已保存至 /root/vless_config.json"
+echo "VLESS 链接: $VLESS_LINK"
+echo
+
+# 输出Naive配置
 echo "{\"listen\": \"socks://127.0.0.1:1080\",\"proxy\": \"https://$AUTH_USER:$AUTH_PASS@$DOMAIN\"}" > /root/naive.json
 echo "Naiveproxy 配置已保存至 /root/naive.json"
-echo "安装完成"
+echo "Naiveproxy 配置: {\"listen\": \"socks://127.0.0.1:1080\",\"proxy\": \"https://$AUTH_USER:$AUTH_PASS@$DOMAIN\"}"
+echo
+
+echo "=========================================="
+echo "请保存以上配置信息"
+echo "=========================================="
