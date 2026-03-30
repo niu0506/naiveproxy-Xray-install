@@ -75,8 +75,14 @@ apt install -y caddy
 
 #替换xcaddy
 systemctl stop caddy
-echo "正在下载并替换xcaddy..."
-wget https://github.com/klzgrad/forwardproxy/releases/download/v2.10.0-naive/caddy-forwardproxy-naive.tar.xz
+echo "正在获取 Caddy forwardproxy 最新版本..."
+LATEST_VERSION=$(curl -sI "https://github.com/klzgrad/forwardproxy/releases/latest" 2>/dev/null | grep -i "location:" | sed 's|.*/tag/||' | tr -d '\r\n')
+if [ -z "$LATEST_VERSION" ]; then
+    echo "警告：无法获取最新版本，使用默认版本 v2.10.0-naive"
+    LATEST_VERSION="v2.10.0-naive"
+fi
+echo "最新版本: $LATEST_VERSION"
+wget -q --show-progress "https://github.com/klzgrad/forwardproxy/releases/download/${LATEST_VERSION}/caddy-forwardproxy-naive.tar.xz"
 tar -xvf caddy-forwardproxy-naive.tar.xz
 cp /root/caddy-forwardproxy-naive/caddy /usr/bin
 # 为 /usr/bin 目录下的 caddy 文件添加执行权限
