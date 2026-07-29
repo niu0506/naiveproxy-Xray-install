@@ -16,23 +16,8 @@ bash <(curl -fsSL "https://raw.githubusercontent.com/niu0506/naiveproxy-Xray-ins
 
 ```
 bash <(curl -fsSL "https://raw.githubusercontent.com/niu0506/naiveproxy-Xray-install/main/install.sh")
-
 ```
 
 ## 配置文件
 
 安装完成后，配置文件位于root目录下。
-
-## 特别感谢
-
-特别感谢以下项目的作者和贡献者：
-
-- [Xray Install](https://github.com/xtls/Xray-core)
-- [NaiveProxy](https://github.com/klzgrad/naiveproxy)
-
-
-
-
-
-
-
